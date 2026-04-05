@@ -1,0 +1,42 @@
+<div class="opium-notetaker-container" style="display: flex; flex-direction: column; height: 100%; color: #e2e8f0; font-family: 'Segoe UI', sans-serif;">
+    <!-- Simple Menu Bar -->
+    <div style="display: flex; gap: 15px; padding: 5px 10px; background: #1e293b; font-size: 0.8rem; border-bottom: 1px solid #334155;">
+        <span style="cursor: pointer; opacity: 0.8;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">File</span>
+        <span style="cursor: pointer; opacity: 0.8;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">Edit</span>
+        <span style="cursor: pointer; opacity: 0.8;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">Format</span>
+        <span style="cursor: pointer; opacity: 0.8;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">Help</span>
+    </div>
+
+    <!-- Notepad Area -->
+    <textarea 
+        id="notetaker-textarea"
+        placeholder="Start typing your notes here..."
+        style="flex: 1; width: 100%; background: #020617; color: #cbd5e1; border: none; outline: none; padding: 15px; resize: none; font-family: 'Consolas', 'Monaco', monospace; font-size: 1rem; line-height: 1.5;"
+    ></textarea>
+
+    <!-- Status Bar -->
+    <div style="padding: 3px 15px; background: #0f172a; border-top: 1px solid #334155; font-size: 0.7rem; display: flex; justify-content: space-between; opacity: 0.6;">
+        <span>UTF-8</span>
+        <span id="char-count">Characters: 0</span>
+    </div>
+
+    <script>
+        (function() {
+            const area = document.getElementById('notetaker-textarea');
+            const counter = document.getElementById('char-count');
+
+            // Update character count as user types
+            area.addEventListener('input', () => {
+                counter.innerText = `Characters: ${area.value.length}`;
+            });
+
+            // Prevent the OS from dragging when user is typing/selecting text
+            area.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+            });
+
+            // Focus on start
+            area.focus();
+        })();
+    </script>
+</div>
