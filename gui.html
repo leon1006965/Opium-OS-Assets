@@ -5,254 +5,244 @@
     <title>Opium Location DE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            /* Placeholder Wallpaper - Dark & Clean */
-            background: linear-gradient(135deg, #1e1e2f 0%, #0a0a0a 100%);
-            height: 100vh;
-            color: white;
+        body { 
+            margin: 0; 
+            padding: 0;
+            overflow: hidden; 
+            font-family: 'Segoe UI', sans-serif; 
+            background: linear-gradient(135deg, #0f172a 0%, #020617 100%); 
+            height: 100vh; 
+            color: white; 
             user-select: none;
         }
 
-        /* Desktop Area */
-        #desktop {
-            position: relative;
-            height: calc(100vh - 45px);
-            padding: 20px;
+        #desktop { 
+            height: calc(100vh - 45px); 
+            padding: 20px; 
+            position: relative; 
             display: grid;
             grid-template-columns: repeat(auto-fill, 100px);
             grid-auto-rows: 110px;
-            gap: 10px;
+            gap: 15px;
         }
 
-        .icon {
+        .icon { 
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            border-radius: 8px;
+            cursor: pointer; 
+            padding: 10px; 
+            border-radius: 12px; 
             transition: background 0.2s;
-            padding: 10px;
         }
 
-        .icon:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
+        .icon:hover { background: rgba(255,255,255,0.1); }
 
-        .icon-img {
-            width: 48px;
-            height: 48px;
-            background: #444;
+        .icon-img { 
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 10px;
-            margin-bottom: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 28px; 
+            margin-bottom: 8px; 
         }
 
-        /* Taskbar */
-        #taskbar {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            height: 45px;
-            background: rgba(0, 0, 0, 0.8);
+        #taskbar { 
+            position: fixed; 
+            bottom: 0; 
+            width: 100%; 
+            height: 45px; 
+            background: rgba(0,0,0,0.85); 
             backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 0 15px; 
+            border-top: 1px solid rgba(255,255,255,0.1); 
             z-index: 9999;
         }
 
-        #start-btn {
-            height: 100%;
-            padding: 0 20px;
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.05);
+        .start-btn {
+            font-weight: 800;
+            letter-spacing: 1px;
             cursor: pointer;
-            font-weight: bold;
+            padding: 5px 15px;
+            border-radius: 5px;
+            transition: background 0.2s;
         }
 
-        #start-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
+        .start-btn:hover { background: rgba(255,255,255,0.1); }
 
-        #system-tray {
-            padding: 0 15px;
-            font-size: 0.85rem;
-            text-align: right;
-        }
-
-        /* Windows */
-        .window {
-            position: absolute;
-            background: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            min-width: 300px;
-            min-height: 200px;
-            display: flex;
-            flex-direction: column;
+        .window { 
+            position: absolute; 
+            background: #0f172a; 
+            border: 1px solid #334155; 
+            border-radius: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+            width: 600px; 
+            height: 400px; 
             overflow: hidden;
         }
 
-        .window-header {
-            background: #252525;
-            padding: 8px 12px;
-            display: flex;
-            justify-content: space-between;
+        .window-header { 
+            background: #1e293b; 
+            padding: 10px 15px; 
+            cursor: move; 
+            display: flex; 
+            justify-content: space-between; 
             align-items: center;
-            cursor: move;
+            font-size: 0.9rem;
+            font-weight: 600;
         }
 
-        .window-controls span {
-            margin-left: 10px;
-            cursor: pointer;
-            opacity: 0.7;
+        .window-content { 
+            flex: 1; 
+            overflow: auto; 
+            background: #020617; 
+            font-family: 'Fira Code', monospace; 
+            padding: 15px; 
         }
 
-        .window-controls span:hover { opacity: 1; }
-
-        .window-content {
-            flex-grow: 1;
-            padding: 0;
-            background: #000;
+        #term-input { 
+            background: transparent; 
+            border: none; 
+            outline: none; 
+            color: #4ade80; 
+            width: 100%; 
+            font-family: inherit; 
+            font-size: 1rem;
         }
 
-        /* Start Menu */
-        #start-menu {
-            position: fixed;
-            bottom: 50px;
-            left: 10px;
-            width: 200px;
-            background: rgba(20, 20, 20, 0.95);
-            border: 1px solid #333;
-            border-radius: 8px;
-            display: none;
-            flex-direction: column;
-            padding: 10px;
-            z-index: 10000;
-        }
+        .term-line { margin-bottom: 4px; line-height: 1.4; white-space: pre-wrap; }
 
-        .menu-item {
-            padding: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .menu-item:hover { background: #444; }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
+        #clock-container { text-align: right; }
+        #clock-time { font-size: 0.9rem; font-weight: 600; }
+        #clock-date { font-size: 0.7rem; opacity: 0.5; }
     </style>
 </head>
 <body>
-
     <div id="desktop">
-        <!-- Icons -->
         <div class="icon" onclick="openTerminal()">
             <div class="icon-img">🐚</div>
             <span>Terminal</span>
         </div>
     </div>
 
-    <!-- Start Menu -->
-    <div id="start-menu">
-        <div class="menu-item" onclick="openTerminal()">Terminal</div>
-        <hr style="border: 0.5px solid #333; margin: 5px 0;">
-        <div class="menu-item" style="color: #f87171" onclick="exitToKernel()">Exit Opium</div>
-    </div>
-
-    <!-- Taskbar -->
     <div id="taskbar">
-        <div id="start-btn" onclick="toggleStart()">OPIUM</div>
-        <div id="active-tasks"></div>
-        <div id="system-tray">
-            <div id="clock-time">12:00 PM</div>
-            <div id="clock-date" style="font-size: 0.7rem; opacity: 0.6;">01/01/2026</div>
+        <div class="start-btn" onclick="exitToKernel()">OPIUM</div>
+        <div id="clock-container">
+            <div id="clock-time">12:00:00</div>
+            <div id="clock-date">01/01/2026</div>
         </div>
     </div>
 
     <script>
         // --- WINDOW MANAGEMENT ---
         function openTerminal() {
-            createWindow("Terminal", "kernel-term");
-            toggleStart(false);
-        }
-
-        function createWindow(title, type) {
-            const id = 'win-' + Math.random().toString(36).substr(2, 9);
+            if (document.getElementById('term-window')) return;
             const win = document.createElement('div');
             win.className = 'window';
-            win.id = id;
-            win.style.top = '100px';
+            win.id = 'term-window';
+            win.style.top = '100px'; 
             win.style.left = '100px';
-            win.style.width = '600px';
-            win.style.height = '400px';
-
+            
             win.innerHTML = `
                 <div class="window-header" onmousedown="dragElement(this.parentElement)">
-                    <span>${title}</span>
-                    <div class="window-controls">
-                        <span onclick="this.closest('.window').remove()">✕</span>
+                    <span>Opium Terminal</span>
+                    <span onclick="this.closest('.window').remove()" style="cursor:pointer; opacity:0.6 hover:opacity:1">✕</span>
+                </div>
+                <div class="window-content" id="term-body">
+                    <div id="term-logs"></div>
+                    <div style="display:flex; align-items:center;">
+                        <span style="color:#4ade80; margin-right:8px">opium@location:~$</span>
+                        <input id="term-input" spellcheck="false" autofocus>
                     </div>
                 </div>
-                <div class="window-content">
-                    ${type === 'kernel-term' ? '<div style="color: #4ade80; padding: 10px; font-family: monospace;">Opium Kernel Bridge Active...<br>Waiting for input...</div>' : ''}
-                </div>
             `;
-
             document.getElementById('desktop').appendChild(win);
+            
+            const inp = win.querySelector('#term-input');
+            const termBody = win.querySelector('#term-body');
+            const logs = win.querySelector('#term-logs');
+
+            inp.focus();
+
+            inp.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    const cmd = inp.value.trim();
+                    inp.value = '';
+                    if (cmd === 'clear') {
+                        logs.innerHTML = '';
+                        return;
+                    }
+                    if(window.OS && window.OS.runCommand) {
+                        window.OS.runCommand(cmd);
+                    }
+                }
+            });
+
+            // Auto-focus terminal on window click
+            win.addEventListener('click', () => inp.focus());
+        }
+
+        // --- KERNEL BRIDGE LISTENER ---
+        window.addEventListener('opium_print', (e) => {
+            const logs = document.getElementById('term-logs');
+            if (!logs) return;
+
+            const line = document.createElement('div');
+            line.className = 'term-line';
+            
+            // Color coding
+            if (e.detail.type === 'error') line.style.color = '#f87171';
+            else if (e.detail.type === 'info') line.style.color = '#4ade80';
+            else line.style.color = '#e2e8f0';
+
+            line.innerText = e.detail.text;
+            logs.appendChild(line);
+            
+            const body = document.getElementById('term-body');
+            body.scrollTop = body.scrollHeight;
+        });
+
+        // --- SYSTEM FUNCTIONS ---
+        function exitToKernel() {
+            if(window.OS && window.OS.exitGui) {
+                window.OS.exitGui();
+            }
         }
 
         // --- CLOCK ---
         function updateClock() {
             const now = new Date();
-            document.getElementById('clock-time').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('clock-time').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
             document.getElementById('clock-date').innerText = now.toLocaleDateString();
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // --- UI LOGIC ---
-        function toggleStart(force) {
-            const menu = document.getElementById('start-menu');
-            if (force === false) menu.style.display = 'none';
-            else menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
-        }
-
-        function exitToKernel() {
-            if (window.OS && window.OS.exitGui) {
-                window.OS.exitGui();
-            } else {
-                alert("Kernel link not found.");
-            }
-        }
-
         // --- DRAG LOGIC ---
         function dragElement(elmnt) {
-            var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
             elmnt.onmousedown = dragMouseDown;
 
             function dragMouseDown(e) {
+                if (e.target.closest('.window-controls') || e.target.tagName === 'SPAN' && e.target.innerText === '✕') return;
                 e = e || window.event;
                 pos3 = e.clientX;
                 pos4 = e.clientY;
                 document.onmouseup = closeDragElement;
                 document.onmousemove = elementDrag;
                 
-                const wins = document.querySelectorAll('.window');
-                wins.forEach(w => w.style.zIndex = 10);
+                // Bring to front
+                document.querySelectorAll('.window').forEach(w => w.style.zIndex = 10);
                 elmnt.style.zIndex = 100;
             }
 
