@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opium OS - v0.0.9</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+        body, html { margin: 0; padding: 0; height: 100%; background-color: #050505; color: #d1d1d1; font-family: 'Fira+Code', monospace; overflow: hidden; }
+        #terminal-container { height: 100%; width: 100%; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+        .log-entry { margin-bottom: 4px; line-height: 1.4; white-space: pre-wrap; word-break: break-all; }
+        .log-info { color: #60a5fa; }
+        .log-success { color: #4ade80; }
+        .log-error { color: #f87171; }
+        .log-warn { color: #fbbf24; }
+        #input-line { display: flex; align-items: center; margin-top: 10px; }
+        #prompt { color: #4ade80; margin-right: 10px; white-space: nowrap; transition: color 0.2s; }
+        #cmd-input { background: transparent; border: none; outline: none; color: #fff; flex-grow: 1; font-family: inherit; font-size: 1rem; }
+        #gui-layer { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #020617; display: none; z-index: 8888; }
+    </style>
+</head>
+<body>
+    <div id="terminal-container">
+        <div id="output">
+            <div class="log-entry">Opium OS [Version 0.0.9]</div>
+            <div class="log-entry log-info">Inline Terminal Auth System: Active (Gentoo Style).</div>
+            <br>
+        </div>
+        <div id="input-line">
+            <span id="prompt">opium@kernel:~$</span>
+            <input type="text" id="cmd-input" autofocus spellcheck="false">
+        </div>
+    </div>
+
+    <div id="gui-layer"></div>
+
+    <script>
+        const output = document.getElementById('output');
+        const input = document.getElementById('cmd-input');
+        const promptLabel = document.getElementById('prompt');
+        const guiLayer = document.getElementById('gui-layer');
+        
+        const OS_STATE = { 
+            version: "0.0.9", 
+            password: null,
+            installedGui: null, 
+            isGuiRunning: false,
+            programs: {},
+            inputCallback: null // Used for the readline system
+        };
+
+        const print = (text, type = '') => {
+            const div = document.createElement('div');
+            div.className = `log-entry ${type ? 'log-' + type : ''}`;
+            div.innerText = text;
+            output.appendChild(div);
+            document.getElementById('terminal-container').scrollTop = output.scrollHeight;
+            if(OS_STATE.isGuiRunning) window.dispatchEvent(new CustomEvent('opium_print', { detail: { text, type } }));
+        };
+
+        // NEW v0.0.9 READLINE SYSTEM
+        // This pauses command execution and waits for a terminal response
+        const readTerminalInput = (customPrompt, isPassword = false) => {
+            return new Promise((resolve) => {
+                const oldPrompt = promptLabel.innerText;
+                const oldType = input.type;
+                
+                promptLabel.innerText = customPrompt;
+                promptLabel.style.color = "#fbbf24"; // Warning/Input color
+                if (isPassword) input.type = "password";
+
+                OS_STATE.inputCallback = (val) => {
+                    promptLabel.innerText = oldPrompt;
+                    promptLabel.style.color = "#4ade80";
+                    input.type = oldType;
+                    OS_STATE.inputCallback = null;
+                    resolve(val);
+                };
+            });
+        };
+
+        const commands = {
+            'help': () => print("Commands: help, clear, setpassword, import gui/program/module [name] [url], gui, neofetch"),
+            'clear': () => { output.innerHTML = ''; },
+            'setpassword': async () => {
+                const pass = await readTerminalInput("Enter New Password: ", true);
+                if (pass && pass.trim() !== "") {
+                    OS_STATE.password = pass;
+                    print("passwd: password updated successfully", "success");
+                } else {
+                    print("passwd: password unchanged", "warn");
+                }
+            },
+            'import': async (args) => {
+                const type = args[0];
+                if (!type) return print("Usage: import [gui|program|module] [args]", "error");
+
+                // Auth Check via Terminal
+                if (OS_STATE.password) {
+                    const attempt = await readTerminalInput("Password for sudo: ", true);
+                    if (attempt !== OS_STATE.password) {
+                        return print("sudo: 1 incorrect password attempt", "error");
+                    }
+                }
+
+                try {
+                    const [arg1, arg2] = [args[1], args[2]];
+                    if (type === 'gui') {
+                        print(`Fetching GUI...`, "info");
+                        const res = await fetch(arg1);
+                        OS_STATE.installedGui = await res.text();
+                        print(`GUI v2 installed successfully.`, "success");
+                    } else if (type === 'program') {
+                        print(`Installing '${arg1}'...`, "info");
+                        const res = await fetch(arg2);
+                        OS_STATE.programs[arg1] = await res.text();
+                        print(`'${arg1}' added to /bin/`, "success");
+                        if(OS_STATE.isGuiRunning) window.dispatchEvent(new CustomEvent('opium_new_program', { detail: { name: arg1 } }));
+                    } else if (type === 'module') {
+                        print(`Loading module '${arg1}'...`, "info");
+                        const res = await fetch(arg2);
+                        const code = await res.text();
+                        const script = document.createElement('script');
+                        script.textContent = code;
+                        document.body.appendChild(script);
+                        print(`Module '${arg1}' initialized.`, "success");
+                    }
+                } catch (e) { print("Error: " + e.message, "error"); }
+            },
+            'gui': () => {
+                if (!OS_STATE.installedGui) return print("Error: No GUI installed.", "error");
+                guiLayer.innerHTML = OS_STATE.installedGui;
+                guiLayer.style.display = 'block';
+                OS_STATE.isGuiRunning = true;
+                
+                const scripts = Array.from(guiLayer.querySelectorAll("script"));
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement("script");
+                    Array.from(oldScript.attributes).forEach(a => newScript.setAttribute(a.name, a.value));
+                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+
+                Object.keys(OS_STATE.programs).forEach(name => {
+                    window.dispatchEvent(new CustomEvent('opium_new_program', { detail: { name } }));
+                });
+            },
+            'neofetch': () => {
+                print("Opium OS v0.0.9");
+                print("Kernel: Web-Bash Core");
+                print(`Security: ${OS_STATE.password ? 'Active (Terminal Auth)' : 'Disabled'}`);
+            }
+        };
+
+        window.OS = {
+            getState: () => OS_STATE,
+            exitGui: () => {
+                guiLayer.style.display = 'none';
+                guiLayer.innerHTML = '';
+                OS_STATE.isGuiRunning = false;
+                print("GUI Session terminated.", "info");
+            },
+            runCommand: (cmd) => {
+                const parts = cmd.trim().split(' ');
+                const base = parts[0].toLowerCase();
+                const args = parts.slice(1);
+                if (commands[base]) commands[base](args);
+                else if (OS_STATE.programs[base]) window.dispatchEvent(new CustomEvent('opium_run_program', { detail: { name: base, html: OS_STATE.programs[base] } }));
+                else print(`${base}: command not found`, "error");
+            }
+        };
+
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                const val = input.value;
+                input.value = '';
+                
+                // If we are waiting for input (readline)
+                if (OS_STATE.inputCallback) {
+                    // Don't print the password to the terminal
+                    if (input.type !== "password") print(val); 
+                    else print("********");
+                    
+                    OS_STATE.inputCallback(val);
+                    return;
+                }
+
+                if (val.trim()) {
+                    print(`opium@kernel:~$ ${val}`);
+                    window.OS.runCommand(val);
+                }
+            }
+        });
+
+        // GUI Bridge (also uses terminal input)
+        window.addEventListener('opium_auth_request', async (e) => {
+            // Note: If GUI is running, terminal is hidden, so we might need a 
+            // separate GUI-based prompt for this eventually, but for now 
+            // this keeps the kernel pure.
+            const attempt = await readTerminalInput("Root Password: ", true);
+            e.detail.callback(attempt === OS_STATE.password);
+        });
+    </script>
+</body>
+</html>
