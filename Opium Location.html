@@ -2,205 +2,326 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Opium OS - v0.0.9</title>
+    <title>Opium Location - v0.2.0 Modern</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
-        body, html { margin: 0; padding: 0; height: 100%; background-color: #050505; color: #d1d1d1; font-family: 'Fira+Code', monospace; overflow: hidden; }
-        #terminal-container { height: 100%; width: 100%; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
-        .log-entry { margin-bottom: 4px; line-height: 1.4; white-space: pre-wrap; word-break: break-all; }
-        .log-info { color: #60a5fa; }
-        .log-success { color: #4ade80; }
-        .log-error { color: #f87171; }
-        .log-warn { color: #fbbf24; }
-        #input-line { display: flex; align-items: center; margin-top: 10px; }
-        #prompt { color: #4ade80; margin-right: 10px; white-space: nowrap; transition: color 0.2s; }
-        #cmd-input { background: transparent; border: none; outline: none; color: #fff; flex-grow: 1; font-family: inherit; font-size: 1rem; }
-        #gui-layer { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #020617; display: none; z-index: 8888; }
+        body { 
+            margin: 0; padding: 0; overflow: hidden; 
+            background: #020617; 
+            background-image: radial-gradient(circle at top left, #1e293b, #020617);
+            height: 100vh; width: 100vw; color: white; user-select: none; 
+            font-family: 'Inter', sans-serif;
+            position: fixed; top: 0; left: 0;
+        }
+
+        /* Setup / Lock Screen Overlays */
+        .overlay { 
+            position: fixed; inset: 0; 
+            background: rgba(2, 6, 23, 0.8); 
+            backdrop-filter: blur(25px); 
+            z-index: 100000; 
+            display: flex; align-items: center; justify-content: center; flex-direction: column; 
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .setup-card { 
+            background: rgba(30, 41, 59, 0.5); 
+            padding: 40px; 
+            border-radius: 24px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            width: 450px; 
+            text-align: center; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Desktop Grid */
+        #desktop { 
+            height: 100vh; padding: 25px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, 110px); 
+            grid-auto-rows: 120px; 
+            gap: 10px; 
+            position: relative; 
+            z-index: 1;
+        }
+        
+        /* Taskbar Variants */
+        #taskbar { 
+            position: fixed; display: flex; align-items: center; 
+            background: rgba(15, 23, 42, 0.7); 
+            backdrop-filter: blur(15px); 
+            z-index: 9999; 
+            border: 1px solid rgba(255,255,255,0.08); 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .tb-bottom { bottom: 12px; left: 12px; right: 12px; height: 54px; border-radius: 16px; padding: 0 15px; }
+        .tb-dock { bottom: 15px; left: 50%; transform: translateX(-50%); height: 64px; border-radius: 24px; padding: 0 25px; min-width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+
+        /* Start Menu */
+        #start-menu { 
+            position: fixed; bottom: 80px; left: 20px; width: 320px; 
+            background: rgba(30, 41, 59, 0.9); 
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1); 
+            border-radius: 20px; 
+            display: none; flex-direction: column; 
+            overflow: hidden; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6); 
+            z-index: 10000;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .start-item { padding: 14px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; border-radius: 10px; margin: 0 8px; }
+        .start-item:hover { background: rgba(255,255,255,0.1); }
+
+        /* Icon Styling */
+        .icon { display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 12px; border-radius: 16px; transition: 0.2s; }
+        .icon:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
+        .icon-img { 
+            width: 54px; height: 54px; 
+            background: linear-gradient(135deg, #334155 0%, #0f172a 100%); 
+            border-radius: 14px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 26px; 
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* Window System */
+        .window { position: absolute; background: #0f172a; border: 1px solid #334155; border-radius: 16px; display: flex; flex-direction: column; box-shadow: 0 30px 60px rgba(0,0,0,0.6); width: 650px; height: 450px; overflow: hidden; z-index: 100; animation: winPop 0.2s ease-out; }
+        @keyframes winPop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .window-header { background: #1e293b; padding: 14px 20px; cursor: move; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+        .window-content { flex: 1; overflow: auto; background: #000; position: relative; }
+        
+        .btn-start { 
+            background: #3b82f6; width: 38px; height: 38px; border-radius: 10px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; cursor: pointer; transition: 0.2s;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
+        }
+        .btn-start:hover { transform: scale(1.1); background: #2563eb; }
     </style>
 </head>
 <body>
-    <div id="terminal-container">
-        <div id="output">
-            <div class="log-entry">Opium OS [Version 0.0.9]</div>
-            <div class="log-entry log-info">Inline Terminal Auth System: Active (Gentoo Style).</div>
-            <br>
-        </div>
-        <div id="input-line">
-            <span id="prompt">opium@kernel:~$</span>
-            <input type="text" id="cmd-input" autofocus spellcheck="false">
+
+    <!-- Setup Wizard -->
+    <div id="setup-wizard" class="overlay">
+        <div class="setup-card">
+            <div class="text-4xl mb-4">✨</div>
+            <h1 class="text-2xl font-bold mb-2">Opium Location</h1>
+            <p class="text-slate-400 mb-8 text-sm">Personalize your desktop experience</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div onclick="finishSetup('tb-bottom')" class="p-6 border border-slate-700 rounded-2xl hover:bg-slate-700/50 cursor-pointer transition group">
+                    <div class="h-2 w-full bg-blue-500 rounded-full mb-3 opacity-50 group-hover:opacity-100"></div>
+                    <p class="text-xs font-bold">Classic</p>
+                </div>
+                <div onclick="finishSetup('tb-dock')" class="p-6 border border-slate-700 rounded-2xl hover:bg-slate-700/50 cursor-pointer transition group">
+                    <div class="h-2 w-12 mx-auto bg-blue-500 rounded-full mb-3 opacity-50 group-hover:opacity-100"></div>
+                    <p class="text-xs font-bold">Dock</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div id="gui-layer"></div>
+    <!-- Lock Screen -->
+    <div id="lock-screen" class="overlay" style="display:none; z-index: 100001;">
+        <div class="text-center">
+            <h1 id="lock-time" class="text-8xl font-thin mb-4 tracking-tighter">00:00</h1>
+            <p id="lock-date" class="text-blue-400 font-medium tracking-widest uppercase text-xs mb-12">MONDAY, APRIL 6</p>
+            
+            <div class="bg-white/5 p-8 rounded-3xl border border-white/10 backdrop-blur-md w-80">
+                <div class="w-12 h-12 bg-slate-700 rounded-full mx-auto mb-4 flex items-center justify-center">👤</div>
+                <p class="text-sm font-bold mb-6">Opium User</p>
+                <input type="password" id="lock-pass" placeholder="Enter Password" 
+                       class="w-full bg-black/40 border border-white/10 p-3 rounded-xl outline-none focus:border-blue-500 text-center mb-4 transition">
+                <button onclick="unlock()" class="w-full bg-blue-600 hover:bg-blue-500 p-3 rounded-xl font-bold text-sm transition shadow-lg">Sign In</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desktop -->
+    <div id="desktop">
+        <div class="icon" onclick="openTerminal()">
+            <div class="icon-img">🐚</div>
+            <span class="mt-2 text-[11px] font-medium opacity-80">Terminal</span>
+        </div>
+    </div>
+
+    <!-- Start Menu -->
+    <div id="start-menu">
+        <div class="p-6 bg-white/5 border-b border-white/5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold">O</div>
+                <div>
+                    <p class="text-sm font-bold">Opium User</p>
+                    <p class="text-[10px] opacity-50">Kernel v0.0.9 Active</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-3 flex-1">
+            <p class="text-[10px] uppercase tracking-widest opacity-30 font-bold ml-3 mb-2">Pinned</p>
+            <div class="start-item" onclick="openTerminal(); toggleStart()"><span>🐚</span> Terminal</div>
+        </div>
+        <div class="p-4 bg-black/20 flex flex-col gap-1">
+            <div class="start-item text-slate-300 hover:text-white" onclick="lockOS()"><span>🔒</span> Lock Screen</div>
+            <div class="start-item text-slate-300 hover:text-white" onclick="logout()"><span>🚪</span> Log Out</div>
+            <div class="start-item text-red-400 hover:bg-red-500/10" onclick="window.OS.exitGui()"><span>🛑</span> Power Off Session</div>
+        </div>
+    </div>
+
+    <!-- Taskbar -->
+    <div id="taskbar">
+        <div class="btn-start" onclick="toggleStart()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/></svg>
+        </div>
+        <div id="dock-icons" class="flex gap-2 ml-4"></div>
+        <div class="flex-grow"></div>
+        <div class="flex items-center gap-4 px-2">
+            <div class="text-[11px] font-bold opacity-80" id="tb-clock">00:00:00</div>
+        </div>
+    </div>
 
     <script>
-        const output = document.getElementById('output');
-        const input = document.getElementById('cmd-input');
-        const promptLabel = document.getElementById('prompt');
-        const guiLayer = document.getElementById('gui-layer');
+        const kernelState = window.OS.getState();
         
-        const OS_STATE = { 
-            version: "0.0.9", 
-            password: null,
-            installedGui: null, 
-            isGuiRunning: false,
-            programs: {},
-            inputCallback: null // Used for the readline system
-        };
+        function finishSetup(style) {
+            const tb = document.getElementById('taskbar');
+            tb.classList.add(style);
+            document.getElementById('setup-wizard').style.display = 'none';
+            // Auto-lock if a password exists
+            if (kernelState.password) lockOS();
+        }
 
-        const print = (text, type = '') => {
-            const div = document.createElement('div');
-            div.className = `log-entry ${type ? 'log-' + type : ''}`;
-            div.innerText = text;
-            output.appendChild(div);
-            document.getElementById('terminal-container').scrollTop = output.scrollHeight;
-            if(OS_STATE.isGuiRunning) window.dispatchEvent(new CustomEvent('opium_print', { detail: { text, type } }));
-        };
+        function toggleStart() {
+            const menu = document.getElementById('start-menu');
+            const isVisible = menu.style.display === 'flex';
+            menu.style.display = isVisible ? 'none' : 'flex';
+        }
 
-        // NEW v0.0.9 READLINE SYSTEM
-        // This pauses command execution and waits for a terminal response
-        const readTerminalInput = (customPrompt, isPassword = false) => {
-            return new Promise((resolve) => {
-                const oldPrompt = promptLabel.innerText;
-                const oldType = input.type;
-                
-                promptLabel.innerText = customPrompt;
-                promptLabel.style.color = "#fbbf24"; // Warning/Input color
-                if (isPassword) input.type = "password";
+        function lockOS() {
+            document.getElementById('lock-screen').style.display = 'flex';
+            document.getElementById('start-menu').style.display = 'none';
+        }
 
-                OS_STATE.inputCallback = (val) => {
-                    promptLabel.innerText = oldPrompt;
-                    promptLabel.style.color = "#4ade80";
-                    input.type = oldType;
-                    OS_STATE.inputCallback = null;
-                    resolve(val);
-                };
-            });
-        };
-
-        const commands = {
-            'help': () => print("Commands: help, clear, setpassword, import gui/program/module [name] [url], gui, neofetch"),
-            'clear': () => { output.innerHTML = ''; },
-            'setpassword': async () => {
-                const pass = await readTerminalInput("Enter New Password: ", true);
-                if (pass && pass.trim() !== "") {
-                    OS_STATE.password = pass;
-                    print("passwd: password updated successfully", "success");
-                } else {
-                    print("passwd: password unchanged", "warn");
-                }
-            },
-            'import': async (args) => {
-                const type = args[0];
-                if (!type) return print("Usage: import [gui|program|module] [args]", "error");
-
-                // Auth Check via Terminal
-                if (OS_STATE.password) {
-                    const attempt = await readTerminalInput("Password for sudo: ", true);
-                    if (attempt !== OS_STATE.password) {
-                        return print("sudo: 1 incorrect password attempt", "error");
-                    }
-                }
-
-                try {
-                    const [arg1, arg2] = [args[1], args[2]];
-                    if (type === 'gui') {
-                        print(`Fetching GUI...`, "info");
-                        const res = await fetch(arg1);
-                        OS_STATE.installedGui = await res.text();
-                        print(`GUI v2 installed successfully.`, "success");
-                    } else if (type === 'program') {
-                        print(`Installing '${arg1}'...`, "info");
-                        const res = await fetch(arg2);
-                        OS_STATE.programs[arg1] = await res.text();
-                        print(`'${arg1}' added to /bin/`, "success");
-                        if(OS_STATE.isGuiRunning) window.dispatchEvent(new CustomEvent('opium_new_program', { detail: { name: arg1 } }));
-                    } else if (type === 'module') {
-                        print(`Loading module '${arg1}'...`, "info");
-                        const res = await fetch(arg2);
-                        const code = await res.text();
-                        const script = document.createElement('script');
-                        script.textContent = code;
-                        document.body.appendChild(script);
-                        print(`Module '${arg1}' initialized.`, "success");
-                    }
-                } catch (e) { print("Error: " + e.message, "error"); }
-            },
-            'gui': () => {
-                if (!OS_STATE.installedGui) return print("Error: No GUI installed.", "error");
-                guiLayer.innerHTML = OS_STATE.installedGui;
-                guiLayer.style.display = 'block';
-                OS_STATE.isGuiRunning = true;
-                
-                const scripts = Array.from(guiLayer.querySelectorAll("script"));
-                scripts.forEach(oldScript => {
-                    const newScript = document.createElement("script");
-                    Array.from(oldScript.attributes).forEach(a => newScript.setAttribute(a.name, a.value));
-                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                    oldScript.parentNode.replaceChild(newScript, oldScript);
-                });
-
-                Object.keys(OS_STATE.programs).forEach(name => {
-                    window.dispatchEvent(new CustomEvent('opium_new_program', { detail: { name } }));
-                });
-            },
-            'neofetch': () => {
-                print("Opium OS v0.0.9");
-                print("Kernel: Web-Bash Core");
-                print(`Security: ${OS_STATE.password ? 'Active (Terminal Auth)' : 'Disabled'}`);
-            }
-        };
-
-        window.OS = {
-            getState: () => OS_STATE,
-            exitGui: () => {
-                guiLayer.style.display = 'none';
-                guiLayer.innerHTML = '';
-                OS_STATE.isGuiRunning = false;
-                print("GUI Session terminated.", "info");
-            },
-            runCommand: (cmd) => {
-                const parts = cmd.trim().split(' ');
-                const base = parts[0].toLowerCase();
-                const args = parts.slice(1);
-                if (commands[base]) commands[base](args);
-                else if (OS_STATE.programs[base]) window.dispatchEvent(new CustomEvent('opium_run_program', { detail: { name: base, html: OS_STATE.programs[base] } }));
-                else print(`${base}: command not found`, "error");
-            }
-        };
-
-        input.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                const val = input.value;
+        function unlock() {
+            const input = document.getElementById('lock-pass');
+            // Bridge: Use the kernel password
+            if (!kernelState.password || input.value === kernelState.password) {
+                document.getElementById('lock-screen').style.display = 'none';
                 input.value = '';
-                
-                // If we are waiting for input (readline)
-                if (OS_STATE.inputCallback) {
-                    // Don't print the password to the terminal
-                    if (input.type !== "password") print(val); 
-                    else print("********");
-                    
-                    OS_STATE.inputCallback(val);
-                    return;
-                }
+            } else {
+                input.classList.add('border-red-500');
+                setTimeout(() => input.classList.remove('border-red-500'), 500);
+            }
+        }
 
-                if (val.trim()) {
-                    print(`opium@kernel:~$ ${val}`);
-                    window.OS.runCommand(val);
-                }
+        function logout() {
+            lockOS();
+        }
+
+        // Window Management
+        function createWindow(title, content) {
+            const win = document.createElement('div');
+            win.className = 'window';
+            win.style.top = '100px'; win.style.left = '100px';
+            win.innerHTML = `
+                <div class="window-header" onmousedown="dragElement(this.parentElement)">
+                    <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">${title}</span>
+                    <div class="flex gap-2">
+                        <div class="w-3 h-3 bg-yellow-500 rounded-full cursor-pointer opacity-50 hover:opacity-100"></div>
+                        <div onclick="this.closest('.window').remove()" class="w-3 h-3 bg-red-500 rounded-full cursor-pointer opacity-50 hover:opacity-100"></div>
+                    </div>
+                </div>
+                <div class="window-content">${content}</div>
+            `;
+            document.getElementById('desktop').appendChild(win);
+            focusWindow(win);
+            return win;
+        }
+
+        function focusWindow(win) {
+            document.querySelectorAll('.window').forEach(w => w.style.zIndex = 10);
+            win.style.zIndex = 100;
+        }
+
+        // Terminal Bridge
+        function openTerminal() {
+            if (document.getElementById('term-window')) return;
+            const win = createWindow("Kernel Terminal", `
+                <div id="term-body" class="p-4 h-full overflow-auto font-mono text-xs bg-black/90">
+                    <div id="term-logs"></div>
+                    <div class="flex mt-2">
+                        <span class="text-green-400 mr-2">opium@kernel:~$</span>
+                        <input id="term-input" class="bg-transparent border-none outline-none text-white w-full" spellcheck="false" autofocus>
+                    </div>
+                </div>
+            `);
+            win.id = 'term-window';
+            const inp = win.querySelector('#term-input');
+            inp.addEventListener('keydown', e => { 
+                if (e.key === 'Enter') { 
+                    window.OS.runCommand(inp.value); 
+                    inp.value = ''; 
+                } 
+            });
+            win.addEventListener('mousedown', () => focusWindow(win));
+        }
+
+        // Listen for Kernel prints
+        window.addEventListener('opium_print', (e) => {
+            const logs = document.getElementById('term-logs');
+            if (logs) {
+                const line = document.createElement('div');
+                const colors = { error: '#f87171', success: '#4ade80', info: '#60a5fa', warn: '#fbbf24' };
+                line.style.color = colors[e.detail.type] || '#d1d1d1';
+                line.className = "mb-1 leading-relaxed";
+                line.innerText = e.detail.text;
+                logs.appendChild(line);
+                document.getElementById('term-body').scrollTop = logs.scrollHeight;
             }
         });
 
-        // GUI Bridge (also uses terminal input)
-        window.addEventListener('opium_auth_request', async (e) => {
-            // Note: If GUI is running, terminal is hidden, so we might need a 
-            // separate GUI-based prompt for this eventually, but for now 
-            // this keeps the kernel pure.
-            const attempt = await readTerminalInput("Root Password: ", true);
-            e.detail.callback(attempt === OS_STATE.password);
+        // App installation bridge
+        window.addEventListener('opium_new_program', (e) => {
+            const icon = document.createElement('div');
+            icon.className = 'icon';
+            icon.onclick = () => window.OS.runCommand(e.detail.name);
+            icon.innerHTML = `<div class="icon-img">🧩</div><span class="mt-2 text-[10px] font-medium opacity-70">${e.detail.name}</span>`;
+            document.getElementById('desktop').appendChild(icon);
         });
+
+        window.addEventListener('opium_run_program', (e) => createWindow(e.detail.name, e.detail.html));
+
+        // System Clock
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            document.getElementById('tb-clock').innerText = timeStr;
+            document.getElementById('lock-time').innerText = timeStr.substring(0, 5);
+            
+            const options = { weekday: 'long', month: 'long', day: 'numeric' };
+            document.getElementById('lock-date').innerText = now.toLocaleDateString('en-US', options).toUpperCase();
+        }, 1000);
+
+        function dragElement(elmnt) {
+            let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
+            elmnt.onmousedown = (e) => {
+                if (e.target.closest('div.flex')) return; // Don't drag if clicking buttons
+                p3 = e.clientX; p4 = e.clientY;
+                document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+                document.onmousemove = (e) => {
+                    p1 = p3 - e.clientX; p2 = p4 - e.clientY;
+                    p3 = e.clientX; p4 = e.clientY;
+                    elmnt.style.top = (elmnt.offsetTop - p2) + "px";
+                    elmnt.style.left = (elmnt.offsetLeft - p1) + "px";
+                };
+                focusWindow(elmnt);
+            };
+        }
     </script>
 </body>
 </html>
